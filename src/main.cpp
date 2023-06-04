@@ -9,6 +9,11 @@
 #include <string>
 #include <vector>
 
+/* Image pre-processing parameters */
+#ifndef GAUSSIAN_BLUR_SIZE
+#define GAUSSIAN_BLUR_SIZE 5
+#endif
+
 /**
  * @brief Main function for for shape detection using OpenCV
  *
@@ -35,7 +40,13 @@ int main(int argc, char** argv) {
     /* Convert the image to grayscale */
     cv::Mat image_gray;
     cv::cvtColor(image, image_gray, cv::COLOR_BGR2GRAY);
-    cv::imshow("Grayscale", image_gray);    /**< Show grayscale version of the image */
+    cv::imshow("Grayscale Image", image_gray);    /**< Show grayscale version of the image */
+    cv::waitKey(0);
+
+    /* Blur the image */
+    cv::Mat image_blurred;
+    cv::GaussianBlur(image_gray, image_blurred, cv::Size(GAUSSIAN_BLUR_SIZE, GAUSSIAN_BLUR_SIZE), 0);
+    cv::imshow("Blurred Image", image_blurred);
     cv::waitKey(0);
 
     return 0;

@@ -121,6 +121,18 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+/**
+ * @brief This function detects the shape of a given contour.
+ *
+ * The function takes a contour, approximates it to a simpler form, 
+ * and based on the number of vertices in the approximated shape, 
+ * classifies it. It further distinguishes between a square and a 
+ * rectangle based on the aspect ratio.
+ *
+ * @param contour A reference to a std::vector of cv::Point that represents the contour.
+ *
+ * @return A std::string representing the detected shape.
+ */
 std::string detect_shape(std::vector<cv::Point> &contour) {
     std::string shape = "unknown";  
 

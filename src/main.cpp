@@ -10,12 +10,31 @@
 #include <vector>
 
 /* Image pre-processing parameters */
+
+/* Blurring */
 #ifndef GAUSSIAN_BLUR_SIZE
-#define GAUSSIAN_BLUR_SIZE 5
+#define GAUSSIAN_BLUR_SIZE 5        /**< The size of the blur window*/
+#endif
+/* Thresholding */
+#ifndef BINARY_THRESHOLD_LOW
+#define BINARY_THRESHOLD_LOW 220    /**< Everything below is 0 */
+#endif
+#ifndef BINARY_THRESHOLD_HIGH
+#define BINARY_THRESHOLD_HIGH 255   /**< Everything above is 255 */
+#endif
+/* Canny edge detection */
+#ifndef CANNY_THRESHOLD_1
+#define CANNY_THRESHOLD_1 50        /**< First threshold for the hysteresis procedure */
+#endif
+#ifndef CANNY_THRESHOLD_2
+#define CANNY_THRESHOLD_2 150       /**< Second threshold for the hysteresis procedure */
+#endif
+#ifndef CANNY_APERTURE_SIZE
+#define CANNY_APERTURE_SIZE 3       /**< Aperture size for the Sobel operator*/
 #endif
 
 /**
- * @brief Main function for for shape detection using OpenCV
+ * @brief Main function for shape detection using OpenCV
  *
  * @param argc The number of command-line arguments.
  * @param argv The array of command-line arguments. The second argument should be the path to the image file.
@@ -40,13 +59,25 @@ int main(int argc, char** argv) {
     /* Convert the image to grayscale */
     cv::Mat image_gray;
     cv::cvtColor(image, image_gray, cv::COLOR_BGR2GRAY);
-    cv::imshow("Grayscale Image", image_gray);    /**< Show grayscale version of the image */
+    cv::imshow("Grayscale Image", image_gray);      /**< Show grayscale version of the image */
     cv::waitKey(0);
 
     /* Blur the image */
     cv::Mat image_blurred;
     cv::GaussianBlur(image_gray, image_blurred, cv::Size(GAUSSIAN_BLUR_SIZE, GAUSSIAN_BLUR_SIZE), 0);
-    cv::imshow("Blurred Image", image_blurred);
+    cv::imshow("Blurred Image", image_blurred);     /**< Show blurred version of the image */
+    cv::waitKey(0);
+
+    /* Binarize and invert the image */
+    cv::Mat image_bin;
+    cv::threshold(image_blurred, image_bin, BINARY_THRESHOLD_LOW, BINARY_THRESHOLD_HIGH, cv::THRESH_BINARY_INV); 
+    cv::imshow("Binary Inverted image", image_bin); /**< Show binary inverted version of the image */
+    cv::waitKey(0);
+
+    /* Apply Canny edge detection*/
+    cv::Mat image_canny;
+    cv::Canny(image_bin, image_canny, CANNY_THRESHOLD_1, CANNY_THRESHOLD_2, CANNY_APERTURE_SIZE);
+    cv::imshow("Canny Image", image_canny);         /**< Show bcanny version of the image*/
     cv::waitKey(0);
 
     return 0;

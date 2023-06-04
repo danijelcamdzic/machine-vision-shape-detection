@@ -32,5 +32,11 @@ int main(int argc, char** argv) {
     cv::imshow("Original Image", image);    /**< Show original image */
     cv::waitKey(0);
 
+    /* Convert the image to grayscale */
+    cv::Mat image_gray;
+    cv::cvtColor(image, image_gray, cv::COLOR_BGR2GRAY);
+    cv::imshow("Grayscale", image_gray);    /**< Show grayscale version of the image */
+    cv::waitKey(0);
+
     return 0;
 }

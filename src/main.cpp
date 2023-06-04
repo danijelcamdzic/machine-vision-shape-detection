@@ -80,5 +80,19 @@ int main(int argc, char** argv) {
     cv::imshow("Canny Image", image_canny);         /**< Show bcanny version of the image*/
     cv::waitKey(0);
 
+    /* Find contours */
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(image_canny, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    /* Draw contours and detect shapes */
+    for(auto &contour : contours) {
+        /* Draw the contour and the shape name */
+        cv::drawContours(image, contours, -1, cv::Scalar(0, 255, 0), 2);
+
+        /* Show the original image with result overlays */
+        cv::imshow("Original Image with Results", image);
+        cv::waitKey(0);
+    }
+
     return 0;
 }

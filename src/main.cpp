@@ -33,6 +33,9 @@
 #define CANNY_APERTURE_SIZE 3       /**< Aperture size for the Sobel operator*/
 #endif
 
+/* Function declaration */
+std::string detect_shape(std::vector<cv::Point> &contour);
+
 /**
  * @brief Main function for shape detection using OpenCV
  *
@@ -108,7 +111,7 @@ int main(int argc, char** argv) {
 
         /* Draw the contour and the shape name */
         cv::drawContours(image, contours, -1, cv::Scalar(0, 255, 0), 2);
-        cv::putText(image, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
+        cv::putText(image, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.6, cv::Scalar(0, 255, 0), 1);
 
         /* Show the original image with result overlays */
         cv::imshow("Original Image with Results", image);
@@ -116,4 +119,52 @@ int main(int argc, char** argv) {
     }
 
     return 0;
+}
+
+std::string detect_shape(std::vector<cv::Point> &contour) {
+    std::string shape = "unknown";  
+
+    /* Calculate the perimeter (total distance around the shape) */
+    double perimeter = cv::arcLength(contour, true);  
+
+    /* This will hold the simplified version of the shape */
+    std::vector<cv::Point> shape_approx;  
+
+    /* Simplify the shape, allowing it to be up to 2% different from the original */
+    cv::approxPolyDP(contour, shape_approx, 0.03 * perimeter, true); 
+
+    /* If the shape has 3 corners, it's a triangle */
+    if (shape_approx.size() == 3) { 
+        shape = "triangle"; 
+    }
+    /* If the shape has 4 corners, it could be a square or a rectangle */
+    else if (shape_approx.size() == 4) {
+        /* Get the smallest rectangle that can fit around the shape */
+        cv::Rect boundingRect = cv::boundingRect(shape_approx); 
+
+        /* Calculate the ratio of the width to the height */
+        float aspect_ratio = (float) boundingRect.width / boundingRect.height; 
+
+        /* If the aspect ratio is close to 1, it's a square; otherwise, it's a rectangle */
+        shape = (aspect_ratio >= 0.95 && aspect_ratio <= 1.05) ? "square" : "rectangle"; 
+    }
+    /* If the shape has 5 corners, it's a pentagon */
+    else if (shape_approx.size() == 5) { 
+        shape = "pentagon"; 
+    }
+    /* If the shape has 6 corners, it's a hexagon */
+    else if (shape_approx.size() == 6) { 
+        shape = "hexagon"; 
+    }
+    /* If the shape has 10 corners, it's a star */
+    else if (shape_approx.size() == 10) { 
+        shape = "star"; 
+    }
+    /* If the shape has more corners or the shape is very rounded, it's a circle */
+    else { 
+        shape = "circle"; 
+    }
+
+    /* Return the name of the shape we've detected */
+    return shape; 
 }

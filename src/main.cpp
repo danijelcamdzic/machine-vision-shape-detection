@@ -36,6 +36,16 @@
 /**
  * @brief Main function for shape detection using OpenCV
  *
+ * This function will:
+ *               1. Load the image
+ *               2. Convert it t ograyscale
+ *               3. Blur it 
+ *               4. Binarize it and invert its colors
+ *               5. Use canny edge detection to detect edges
+ *               6. Find contours
+ *               7. Call the function to detect shapes
+ *               8. Overlay the results on the original image
+ * 
  * @param argc The number of command-line arguments.
  * @param argv The array of command-line arguments. The second argument should be the path to the image file.
  * @return int Returns 0 if the program executed successfully, and 1 otherwise.
@@ -86,8 +96,19 @@ int main(int argc, char** argv) {
 
     /* Draw contours and detect shapes */
     for(auto &contour : contours) {
+        /* Compute moments for the current contour */
+        cv::Moments contourMoments = cv::moments(contour);
+        
+        /* Calculate the centroid of the contour */
+        int centroidX = (int)(contourMoments.m10 / contourMoments.m00);
+        int centroidY = (int)(contourMoments.m01 / contourMoments.m00);
+
+        /* Detect the shape of the contour */
+        std::string shape_name = detect_shape(contour);
+
         /* Draw the contour and the shape name */
         cv::drawContours(image, contours, -1, cv::Scalar(0, 255, 0), 2);
+        cv::putText(image, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
 
         /* Show the original image with result overlays */
         cv::imshow("Original Image with Results", image);

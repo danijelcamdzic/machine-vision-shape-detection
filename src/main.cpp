@@ -10,27 +10,41 @@
 #include <vector>
 
 /* Image pre-processing parameters */
-
+/* Define resize factor */
+#ifndef RESIZE_FACTOR
+#define RESIZE_FACTOR           0.6     /**< Factor by which the image will be resized */
+#endif
+/* Define cropping percentages - should be values between 0 and 1 */
+#ifndef CROP_PERCENT_TOP
+#define CROP_PERCENT_TOP        0.02    /**< Percentage of the top of the image to crop */
+#endif
+#ifndef CROP_PERCENT_BOTTOM
+#define CROP_PERCENT_BOTTOM     0.26    /**< Percentage of the bottom of the image to crop */
+#endif
 /* Blurring */
 #ifndef GAUSSIAN_BLUR_SIZE
-#define GAUSSIAN_BLUR_SIZE 5        /**< The size of the blur window*/
+#define GAUSSIAN_BLUR_SIZE      15      /**< The size of the blur window*/
 #endif
 /* Thresholding */
 #ifndef BINARY_THRESHOLD_LOW
-#define BINARY_THRESHOLD_LOW 220    /**< Everything below is 0 */
+#define BINARY_THRESHOLD_LOW    35      /**< Everything below is 0 */
 #endif
 #ifndef BINARY_THRESHOLD_HIGH
-#define BINARY_THRESHOLD_HIGH 255   /**< Everything above is 255 */
+#define BINARY_THRESHOLD_HIGH   255     /**< Everything above is 255 */
 #endif
 /* Canny edge detection */
 #ifndef CANNY_THRESHOLD_1
-#define CANNY_THRESHOLD_1 50        /**< First threshold for the hysteresis procedure */
+#define CANNY_THRESHOLD_1       50      /**< First threshold for the hysteresis procedure */
 #endif
 #ifndef CANNY_THRESHOLD_2
-#define CANNY_THRESHOLD_2 150       /**< Second threshold for the hysteresis procedure */
+#define CANNY_THRESHOLD_2       150     /**< Second threshold for the hysteresis procedure */
 #endif
 #ifndef CANNY_APERTURE_SIZE
-#define CANNY_APERTURE_SIZE 3       /**< Aperture size for the Sobel operator*/
+#define CANNY_APERTURE_SIZE     5       /**< Aperture size for the Sobel operator*/
+#endif
+/* Define processing method */
+#ifndef PROCESS_LARGEST_CONTOUR_ONLY
+#define PROCESS_LARGEST_CONTOUR_ONLY     1     /**< Set to 1 to process only the largest contour, and 0 to process all contours */
 #endif
 
 /* Function declaration */
@@ -38,16 +52,6 @@ std::string detect_shape(std::vector<cv::Point> &contour);
 
 /**
  * @brief Main function for shape detection using OpenCV
- *
- * This function will:
- *               1. Load the image
- *               2. Convert it t ograyscale
- *               3. Blur it 
- *               4. Binarize it and invert its colors
- *               5. Use canny edge detection to detect edges
- *               6. Find contours
- *               7. Call the function to detect shapes
- *               8. Overlay the results on the original image
  * 
  * @param argc The number of command-line arguments.
  * @param argv The array of command-line arguments. The second argument should be the path to the image file.
@@ -69,9 +73,24 @@ int main(int argc, char** argv) {
     cv::imshow("Original Image", image);    /**< Show original image */
     cv::waitKey(0);
 
+    /* Resize the image */
+    cv::Mat image_resized;
+    cv::resize(image, image_resized, cv::Size(), RESIZE_FACTOR, RESIZE_FACTOR, cv::INTER_AREA);
+    cv::imshow("Resized Image", image_resized);    /**< Show resized version of the image */
+    cv::waitKey(0);
+
+    /* Crop the image */
+    int crop_rows_top = (int)(image_resized.rows * CROP_PERCENT_TOP);
+    int crop_rows_bottom = (int)(image_resized.rows * (1 - CROP_PERCENT_BOTTOM));
+    cv::Range row_range(crop_rows_top, crop_rows_bottom);
+    cv::Range col_range(0, image_resized.cols);
+    cv::Mat image_cropped = image_resized(row_range, col_range);
+    cv::imshow("Cropped Image", image_cropped);     /**< Show cropped version of the image */
+    cv::waitKey(0);
+
     /* Convert the image to grayscale */
     cv::Mat image_gray;
-    cv::cvtColor(image, image_gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(image_cropped, image_gray, cv::COLOR_BGR2GRAY);
     cv::imshow("Grayscale Image", image_gray);      /**< Show grayscale version of the image */
     cv::waitKey(0);
 
@@ -83,7 +102,7 @@ int main(int argc, char** argv) {
 
     /* Binarize and invert the image */
     cv::Mat image_bin;
-    cv::threshold(image_blurred, image_bin, BINARY_THRESHOLD_LOW, BINARY_THRESHOLD_HIGH, cv::THRESH_BINARY_INV); 
+    cv::threshold(image_blurred, image_bin, BINARY_THRESHOLD_LOW, BINARY_THRESHOLD_HIGH, cv::THRESH_BINARY); 
     cv::imshow("Binary Inverted image", image_bin); /**< Show binary inverted version of the image */
     cv::waitKey(0);
 
@@ -93,30 +112,73 @@ int main(int argc, char** argv) {
     cv::imshow("Canny Image", image_canny);         /**< Show bcanny version of the image*/
     cv::waitKey(0);
 
-    /* Find contours */
-    std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(image_canny, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+/* Find contours */
+std::vector<std::vector<cv::Point>> contours;
+std::vector<cv::Vec4i> hierarchy; 
+cv::findContours(image_canny, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+#if PROCESS_LARGEST_CONTOUR_ONLY
+    /* Process the largest contour only */
+
+    /* Check if the contours vector is empty */
+    if(contours.empty()) {
+        std::cerr << "No contours found in the image" << std::endl;
+        return 1;
+    }
+
+    /* Find the contour with the longest perimeter */
+    auto longest_contour = std::max_element(contours.begin(), contours.end(), [](const std::vector<cv::Point>& c1, const std::vector<cv::Point>& c2) {
+        return cv::arcLength(c1, true) < cv::arcLength(c2, true);
+    });
+
+    /* Process the longest contour */
+    /* Compute moments for the current contour */
+    cv::Moments contourMoments = cv::moments(*longest_contour);
+
+    /* Calculate the centroid of the contour */
+    int centroidX = (int)(contourMoments.m10 / contourMoments.m00);
+    int centroidY = (int)(contourMoments.m01 / contourMoments.m00);
+
+    /* Detect the shape of the contour */
+    std::string shape_name = detect_shape(*longest_contour);
+
+    /* Draw the contour and the shape name */
+    cv::drawContours(image_cropped, contours, std::distance(contours.begin(), longest_contour), cv::Scalar(0, 255, 0), 2);
+    cv::putText(image_cropped, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.6, cv::Scalar(0, 255, 0), 1);
+
+    /* Show the original image with result overlays */
+    cv::imshow("Original Image with Results", image_cropped);
+    cv::waitKey(0);
+
+#else
+    /* Process all contours (ignoring those within bigger contours) */
 
     /* Draw contours and detect shapes */
-    for(auto &contour : contours) {
+    for(size_t i = 0; i < contours.size(); i++) {
+        /* If this contour has a parent contour, skip it */
+        if(hierarchy[i][3] != -1) {
+            continue;
+        }
+
         /* Compute moments for the current contour */
-        cv::Moments contourMoments = cv::moments(contour);
+        cv::Moments contourMoments = cv::moments(contours[i]);
         
         /* Calculate the centroid of the contour */
         int centroidX = (int)(contourMoments.m10 / contourMoments.m00);
         int centroidY = (int)(contourMoments.m01 / contourMoments.m00);
 
         /* Detect the shape of the contour */
-        std::string shape_name = detect_shape(contour);
+        std::string shape_name = detect_shape(contours[i]);
 
         /* Draw the contour and the shape name */
-        cv::drawContours(image, contours, -1, cv::Scalar(0, 255, 0), 2);
-        cv::putText(image, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.6, cv::Scalar(0, 255, 0), 1);
+        cv::drawContours(image_cropped, contours, i, cv::Scalar(0, 255, 0), 2);
+        cv::putText(image_cropped, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.6, cv::Scalar(0, 255, 0), 1);
 
         /* Show the original image with result overlays */
-        cv::imshow("Original Image with Results", image);
+        cv::imshow("Original Image with Results", image_cropped);
         cv::waitKey(0);
     }
+#endif
 
     return 0;
 }
@@ -168,13 +230,16 @@ std::string detect_shape(std::vector<cv::Point> &contour) {
     else if (shape_approx.size() == 6) { 
         shape = "hexagon"; 
     }
-    /* If the shape has 10 corners, it's a star */
-    else if (shape_approx.size() == 10) { 
-        shape = "star"; 
-    }
     /* If the shape has more corners or the shape is very rounded, it's a circle */
     else { 
-        shape = "circle"; 
+        /* Get the smallest rectangle that can fit around the shape */
+        cv::Rect boundingRect = cv::boundingRect(shape_approx); 
+
+        /* Calculate the ratio of the width to the height */
+        float aspect_ratio = (float) boundingRect.width / boundingRect.height; 
+
+        /* If the aspect ratio is close to 1, it's a square; otherwise, it's a rectangle */
+        shape = (aspect_ratio >= 0.9 && aspect_ratio <= 1.1) ? "circle" : "oval rectangle"; 
     }
 
     /* Return the name of the shape we've detected */

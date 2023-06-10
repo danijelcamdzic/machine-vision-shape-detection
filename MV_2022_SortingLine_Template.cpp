@@ -15,8 +15,9 @@
 #include <chrono>
 #include <thread>
 
-
 #include <queue>
+
+#include "shape_detection.h"
 
 // Setting for using Basler GigE cameras.
 #include <pylon/gige/BaslerGigEInstantCamera.h>
@@ -228,38 +229,41 @@ int main(int argc, char** argv)
 					cout << endl << "IMAGE ACQUISITION AT " << mavis_position_current << endl;
 					SortingLineLightON();//ukljucivanje osvetljenja
 					waitKey(500);
+					/* Image should be processed and shapes detected after this line */
 					AcquireImage(&camera);
-					SortingLineLightOFF();
-					waitKey(500);
-					AcquireImage(&camera);
-					SortingLineLasersRgbOnOff(1);
-					waitKey(500);
-					AcquireImage(&camera);
-					SortingLineLasersRgbOnOff(2);
-					waitKey(500);
-					AcquireImage(&camera);
-					SortingLineLasersRgbOnOff(4);
-					waitKey(500);
-					AcquireImage(&camera);
-					SortingLineLasersRgbOnOff(0);
-					SortingLineObject new_object;
-					new_object = objects_queue.front();
-					mavis_obj_position_push = (new_object.beginning_position + new_object.end_position) / 2;//odredjuje se sredina objekta
+					/* Image should be processed and shapes detected before this line */
 
-					switch (pusher_selection) {//rotira u krug redni broj izbacivaca
-					case 0:
-						SortingLineSetPositionPusher1(mavis_obj_position_push);
-						pusher_selection = 1;
-						break;
-					case 1:
-						SortingLineSetPositionPusher2(mavis_obj_position_push);
-						pusher_selection = 2;
-						break;
-					case 2:
-						SortingLineSetPositionPusher3(mavis_obj_position_push);
-						pusher_selection = 0;
-						break;
-					}
+					// SortingLineLightOFF();
+					// waitKey(500);
+					// AcquireImage(&camera);
+					// SortingLineLasersRgbOnOff(1);
+					// waitKey(500);
+					// AcquireImage(&camera);
+					// SortingLineLasersRgbOnOff(2);
+					// waitKey(500);
+					// AcquireImage(&camera);
+					// SortingLineLasersRgbOnOff(4);
+					// waitKey(500);
+					// AcquireImage(&camera);
+					// SortingLineLasersRgbOnOff(0);
+					// SortingLineObject new_object;
+					// new_object = objects_queue.front();
+					// mavis_obj_position_push = (new_object.beginning_position + new_object.end_position) / 2;//odredjuje se sredina objekta
+
+					// switch (pusher_selection) {//rotira u krug redni broj izbacivaca
+					// case 0:
+					// 	SortingLineSetPositionPusher1(mavis_obj_position_push);
+					// 	pusher_selection = 1;
+					// 	break;
+					// case 1:
+					// 	SortingLineSetPositionPusher2(mavis_obj_position_push);
+					// 	pusher_selection = 2;
+					// 	break;
+					// case 2:
+					// 	SortingLineSetPositionPusher3(mavis_obj_position_push);
+					// 	pusher_selection = 0;
+					// 	break;
+					// }
 					objects_queue.pop();//brise se objekat iz Queue-a
 					acquisition_status = IDLE;
 				}
@@ -304,6 +308,9 @@ int AcquireImage(Camera_t* camera) {
 		rgbImageWithBackground = Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t*)imagePylonTemp.GetBuffer());
 		imwrite("images/rgbImageWithBackground.bmp", rgbImageWithBackground);
 		imshow("Current Image", rgbImageWithBackground); // Show our image inside it.
+
+		/* Call my function to process the image */
+		process_image_and_detect_shapes(rgbImageWithBackground);
 	}
 	else
 	{

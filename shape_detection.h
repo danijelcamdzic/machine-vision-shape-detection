@@ -30,7 +30,7 @@
 #endif
 /* Thresholding */
 #ifndef BINARY_THRESHOLD_LOW
-#define BINARY_THRESHOLD_LOW            35      /**< Everything below is 0 */
+#define BINARY_THRESHOLD_LOW            25      /**< Everything below is 0 */
 #endif
 #ifndef BINARY_THRESHOLD_HIGH
 #define BINARY_THRESHOLD_HIGH           255     /**< Everything above is 255 */

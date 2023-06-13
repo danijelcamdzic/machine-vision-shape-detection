@@ -229,41 +229,22 @@ int main(int argc, char** argv)
 					cout << endl << "IMAGE ACQUISITION AT " << mavis_position_current << endl;
 					SortingLineLightON();//ukljucivanje osvetljenja
 					waitKey(500);
-					/* Image should be processed and shapes detected after this line */
 					AcquireImage(&camera);
-					/* Image should be processed and shapes detected before this line */
+					SortingLineObject new_object;
+					new_object = objects_queue.front();
+					mavis_obj_position_push = (new_object.beginning_position + new_object.end_position) / 2;//odredjuje se sredina objekta
 
-					// SortingLineLightOFF();
-					// waitKey(500);
-					// AcquireImage(&camera);
-					// SortingLineLasersRgbOnOff(1);
-					// waitKey(500);
-					// AcquireImage(&camera);
-					// SortingLineLasersRgbOnOff(2);
-					// waitKey(500);
-					// AcquireImage(&camera);
-					// SortingLineLasersRgbOnOff(4);
-					// waitKey(500);
-					// AcquireImage(&camera);
-					// SortingLineLasersRgbOnOff(0);
-					// SortingLineObject new_object;
-					// new_object = objects_queue.front();
-					// mavis_obj_position_push = (new_object.beginning_position + new_object.end_position) / 2;//odredjuje se sredina objekta
-
-					// switch (pusher_selection) {//rotira u krug redni broj izbacivaca
-					// case 0:
-					// 	SortingLineSetPositionPusher1(mavis_obj_position_push);
-					// 	pusher_selection = 1;
-					// 	break;
-					// case 1:
-					// 	SortingLineSetPositionPusher2(mavis_obj_position_push);
-					// 	pusher_selection = 2;
-					// 	break;
-					// case 2:
-					// 	SortingLineSetPositionPusher3(mavis_obj_position_push);
-					// 	pusher_selection = 0;
-					// 	break;
-					// }
+					switch (pusher_selection) {//rotira u krug redni broj izbacivaca
+					case 0:
+					 	SortingLineSetPositionPusher1(mavis_obj_position_push);
+					 	break;
+					 case 1:
+					 	SortingLineSetPositionPusher2(mavis_obj_position_push);
+					 	break;
+					 case 2:
+					 	SortingLineSetPositionPusher3(mavis_obj_position_push);
+					 	break;
+					 }
 					objects_queue.pop();//brise se objekat iz Queue-a
 					acquisition_status = IDLE;
 				}
@@ -272,7 +253,6 @@ int main(int argc, char** argv)
 			//dodatni ispis
 			cout << "current, start, end:" << mavis_position_current << std::setw(10) << mavis_obj_beginning_position << std::setw(10) << mavis_obj_end_position << std::setw(10) << std::endl;
 
-			if (waitKey(30) >= 0) break;
 		}
 		camera.StopGrabbing();
 	}
@@ -307,10 +287,20 @@ int AcquireImage(Camera_t* camera) {
 		fc.Convert(imagePylonTemp, ptrGrabResult);
 		rgbImageWithBackground = Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3, (uint8_t*)imagePylonTemp.GetBuffer());
 		imwrite("images/rgbImageWithBackground.bmp", rgbImageWithBackground);
-		imshow("Current Image", rgbImageWithBackground); // Show our image inside it.
+		//imshow("Current Image", rgbImageWithBackground); // Show our image inside it.
 
 		/* Call my function to process the image */
-		process_image_and_detect_shapes(rgbImageWithBackground);
+		std::string shape_name = process_image_and_detect_shapes(rgbImageWithBackground);
+		
+		if(shape_name.compare("circle") == 0) {
+                  pusher_selection = 0;
+              } else if(shape_name.compare("rectangle") == 0 || shape_name.compare("square") == 0) {
+                  pusher_selection = 1;
+              } else if(shape_name.compare("oval rectangle") == 0) {
+                  pusher_selection = 2;
+              } else {
+                  pusher_selection = 3;
+              }
 	}
 	else
 	{

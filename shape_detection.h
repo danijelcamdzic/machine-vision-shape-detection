@@ -7,6 +7,7 @@
 #ifndef SHAPE_DETECTION_H
 #define SHAPE_DETECTION_H
 
+#include "stdafx.h"
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <string>
@@ -51,8 +52,8 @@
 #endif
 
 /* Function declaration */
-void process_image_and_detect_shapes(cv::Mat &image);
-void process_contour(cv::Mat &image, std::vector<cv::Point> &contour);
+std::string process_image_and_detect_shapes(cv::Mat &image);
+std::string process_contour(cv::Mat &image, std::vector<cv::Point> &contour);
 std::string detect_shape(std::vector<cv::Point> &contour);
 
 #endif /* SHAPE_DETECTION_H */

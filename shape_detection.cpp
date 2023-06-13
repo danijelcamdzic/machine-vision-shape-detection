@@ -14,21 +14,21 @@
  * 
  * @param image An image over which to display the contour
  * 
- * @return void
+ * @return std::string shape_name
  */
-void process_image_and_detect_shapes(cv::Mat &image) {
+std::string process_image_and_detect_shapes(cv::Mat &image) {
     if(image.empty()) {
         std::cerr << "Image is empty!" << std::endl;
-        return;
+        return "no shape";
     }
-    cv::imshow("Original Image", image);           /**< Show original image */
-    cv::waitKey(0);
+    //cv::imshow("Original Image", image);           /**< Show original image */
+    //cv::waitKey(0);
 
     /* Resize the image */
     cv::Mat image_resized;
     cv::resize(image, image_resized, cv::Size(), RESIZE_FACTOR, RESIZE_FACTOR, cv::INTER_AREA);
-    cv::imshow("Resized Image", image_resized);    /**< Show resized version of the image */
-    cv::waitKey(0);
+    //cv::imshow("Resized Image", image_resized);    /**< Show resized version of the image */
+    //cv::waitKey(0);
 
     /* Crop the image */
     int crop_rows_top = (int)(image_resized.rows * CROP_PERCENT_TOP);
@@ -36,32 +36,32 @@ void process_image_and_detect_shapes(cv::Mat &image) {
     cv::Range row_range(crop_rows_top, crop_rows_bottom);
     cv::Range col_range(0, image_resized.cols);
     cv::Mat image_cropped = image_resized(row_range, col_range);
-    cv::imshow("Cropped Image", image_cropped);     /**< Show cropped version of the image */
-    cv::waitKey(0);
+    //cv::imshow("Cropped Image", image_cropped);     /**< Show cropped version of the image */
+    //cv::waitKey(0);
 
     /* Convert the image to grayscale */
     cv::Mat image_gray;
     cv::cvtColor(image_cropped, image_gray, cv::COLOR_BGR2GRAY);
-    cv::imshow("Grayscale Image", image_gray);      /**< Show grayscale version of the image */
-    cv::waitKey(0);
+    //cv::imshow("Grayscale Image", image_gray);      /**< Show grayscale version of the image */
+    //cv::waitKey(0);
 
     /* Blur the image */
     cv::Mat image_blurred;
     cv::GaussianBlur(image_gray, image_blurred, cv::Size(GAUSSIAN_BLUR_SIZE, GAUSSIAN_BLUR_SIZE), 0);
-    cv::imshow("Blurred Image", image_blurred);     /**< Show blurred version of the image */
-    cv::waitKey(0);
+    //cv::imshow("Blurred Image", image_blurred);     /**< Show blurred version of the image */
+    //cv::waitKey(0);
 
     /* Binarize the image */
     cv::Mat image_bin;
     cv::threshold(image_blurred, image_bin, BINARY_THRESHOLD_LOW, BINARY_THRESHOLD_HIGH, cv::THRESH_BINARY); 
-    cv::imshow("Binary image", image_bin);          /**< Show binary version of the image */
-    cv::waitKey(0);
+    //cv::imshow("Binary image", image_bin);          /**< Show binary version of the image */
+    //cv::waitKey(0);
 
     /* Apply Canny edge detection*/
     cv::Mat image_canny;
     cv::Canny(image_bin, image_canny, CANNY_THRESHOLD_1, CANNY_THRESHOLD_2, CANNY_APERTURE_SIZE);
-    cv::imshow("Canny Image", image_canny);         /**< Show Canny version of the image*/
-    cv::waitKey(0);
+    //cv::imshow("Canny Image", image_canny);         /**< Show Canny version of the image*/
+    //cv::waitKey(0);
 
     /* Find contours */
     std::vector<std::vector<cv::Point>> contours;
@@ -71,7 +71,7 @@ void process_image_and_detect_shapes(cv::Mat &image) {
 #if PROCESS_LONGEST_CONTOUR_ONLY
     if(contours.empty()) {
         std::cerr << "No contours found in the image" << std::endl;
-        return;
+        return "no shape";
     }
 
     /* Find the contour with the longest perimeter */
@@ -79,7 +79,7 @@ void process_image_and_detect_shapes(cv::Mat &image) {
         return cv::arcLength(contour1, true) < cv::arcLength(contour2, true);
     });
 
-    process_contour(image_cropped, *longest_contour);
+    std::string shape_name = process_contour(image_cropped, *longest_contour);
 
 #else
     for(size_t i = 0; i < contours.size(); i++) {
@@ -88,12 +88,11 @@ void process_image_and_detect_shapes(cv::Mat &image) {
             continue;
         }
 
-        process_contour(image_cropped, contours[i]);
+        std::string shape_name = process_contour(image_cropped, contours[i]);
     }
 #endif
-
-    std::cout << "Shape detection exited without errors!" << std::endl;
-    return;
+    
+    return shape_name;
 }
 
 /**
@@ -102,9 +101,9 @@ void process_image_and_detect_shapes(cv::Mat &image) {
  * @param image An image over which to display the contour
  * @param contour A reference to a std::vector of cv::Point that represents the contour.
  *
- * @return void
+ * @return std::string shape_name
  */
-void process_contour(cv::Mat &image, std::vector<cv::Point> &contour) {
+std::string process_contour(cv::Mat &image, std::vector<cv::Point> &contour) {
     cv::Moments contourMoments = cv::moments(contour);
     int centroidX = (int)(contourMoments.m10 / contourMoments.m00);
     int centroidY = (int)(contourMoments.m01 / contourMoments.m00);
@@ -116,8 +115,10 @@ void process_contour(cv::Mat &image, std::vector<cv::Point> &contour) {
     cv::putText(image, shape_name, cv::Point(centroidX, centroidY), cv::FONT_HERSHEY_DUPLEX, 0.6, cv::Scalar(0, 255, 0), 1);
 
     /* Show the original image with result overlays */
-    cv::imshow("Original Image with Results", image);
-    cv::waitKey(0);
+    //cv::imshow("Original Image with Results", image);
+    //cv::waitKey(0);
+    
+    return shape_name;
 }
 
 /**

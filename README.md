@@ -30,3 +30,7 @@ To run the project use the following
 ```bash
 ./shape-detection-app /path/your_image_file
 ```
+
+# Report
+
+To see the report which includes an activity diagram, algorithm explanation and results read [link](doc/machine_vision_shape_detection_report.pdf)
